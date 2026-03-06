@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AkuTOOL — X Post Checker</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════════
+   RESET & ROOT
+═══════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f14;
+  --surface:#161921;
+  --surface2:#1e2230;
+  --border:#2a2f42;
+  --border2:#363d54;
+  --text:#f0f2ff;
+  --muted:#7b82a0;
+  --accent:#6c63ff;
+  --cyan:#00d4ff;
+  --green:#00e676;
+  --red:#ff4757;
+  --yellow:#ffd32a;
+  --orange:#ff6b35;
+  --pink:#ff4da6;
+  --font:'Outfit',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden;cursor:default}
+
+/* ═══════════════════════════════════════════════
+   ANIMATED BACKGROUND
+═══════════════════════════════════════════════ */
+.bg-orbs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:.12;animation:drift 20s infinite ease-in-out}
+.orb1{width:600px;height:600px;background:var(--accent);top:-200px;left:-200px;animation-delay:0s}
+.orb2{width:500px;height:500px;background:var(--cyan);bottom:-150px;right:-150px;animation-delay:-7s}
+.orb3{width:400px;height:400px;background:var(--pink);top:40%;left:50%;animation-delay:-14s}
+@keyframes drift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-20px) scale(1.05)}66%{transform:translate(-20px,30px) scale(.95)}}
+
+/* ═══════════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════════ */
+.wrapper{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:40px 24px 80px}
+
+/* ═══════════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════════ */
+.header{text-align:center;margin-bottom:48px;animation:fadeDown .6s ease both}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:none}}
+
+.logo-row{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:12px}
+.logo-meme{font-size:40px;animation:wiggle 3s infinite ease-in-out}
+@keyframes wiggle{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+
+.logo-text{font-size:42px;font-weight:900;letter-spacing:-2px;background:linear-gradient(135deg,var(--accent),var(--cyan),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.logo-tag{font-size:13px;font-family:var(--mono);color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}
+.header-desc{font-size:16px;color:var(--muted);max-width:500px;margin:0 auto;line-height:1.6}
+
+/* ═══════════════════════════════════════════════
+   API KEY CARD
+═══════════════════════════════════════════════ */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
+/* ═══════════════════════════════════════════════
+   MAIN CARD
+═══════════════════════════════════════════════ */
+.main-card{background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:32px;margin-bottom:24px;animation:fadeUp .5s .2s ease both}
+
+.card-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.card-title span{font-size:18px}
+
+/* Textarea */
+.post-wrap{position:relative}
+.post-textarea{width:100%;min-height:160px;background:var(--surface2);border:2px solid var(--border);border-radius:16px;padding:18px;font-family:var(--font);font-size:15px;color:var(--text);outline:none;resize:vertical;line-height:1.7;transition:border-color .2s}
+.post-textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(108,99,255,.12)}
+.post-textarea::placeholder{color:var(--muted)}
+.char-count{position:absolute;bottom:12px;right:16px;font-size:12px;font-family:var(--mono);color:var(--muted)}
+.char-warn{color:var(--red)}
+
+/* Bottom bar */
+.post-bar{display:flex;align-items:center;justify-content:space-between;margin-top:14px;flex-wrap:wrap;gap:10px}
+.post-hints{display:flex;gap:8px;flex-wrap:wrap}
+.hint-pill{padding:4px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:99px;font-size:12px;color:var(--muted);cursor:pointer;transition:all .15s;font-family:var(--mono)}
+.hint-pill:hover{border-color:var(--accent);color:var(--accent)}
+
+/* Analyze button */
+.btn-analyze{padding:12px 32px;background:linear-gradient(135deg,var(--accent),var(--cyan));color:#fff;border:none;border-radius:12px;font-family:var(--font);font-weight:800;font-size:15px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;letter-spacing:-.3px}
+.btn-analyze:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 24px rgba(108,99,255,.35)}
+.btn-analyze:disabled{opacity:.5;cursor:not-allowed;transform:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+
+/* ═══════════════════════════════════════════════
+   RESULT AREA
+═══════════════════════════════════════════════ */
+.result-area{animation:fadeUp .4s ease both}
+
+/* Meme reaction */
+.meme-reaction{text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.meme-face{font-size:80px;line-height:1;animation:bounce .6s ease}
+@keyframes bounce{0%{transform:scale(.5);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+.meme-label{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.meme-sub{font-size:14px;color:var(--muted);max-width:360px;text-align:center;line-height:1.6}
+
+/* Verdict banner */
+.verdict-ok{background:linear-gradient(135deg,rgba(0,230,118,.12),rgba(0,212,255,.06));border:1.5px solid rgba(0,230,118,.35);border-radius:16px;padding:20px 24px;margin-bottom:20px}
+.verdict-warn{background:linear-gradient(135deg,rgba(255,107,53,.12),rgba(255,211,42,.06));border:1.5px solid rgba(255,107,53,.35);border-radius:16px;padding:20px 24px;margin-bottom:20px}
+.verdict-bad{background:linear-gradient(135deg,rgba(255,71,87,.12),rgba(255,77,166,.06));border:1.5px solid rgba(255,71,87,.35);border-radius:16px;padding:20px 24px;margin-bottom:20px}
+
+.verdict-title{font-size:18px;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.verdict-summary{font-size:14px;color:var(--muted);line-height:1.6}
+
+/* Violation cards */
+.violations-list{display:flex;flex-direction:column;gap:14px;margin-bottom:20px}
+.violation-card{background:var(--surface2);border:1px solid var(--border2);border-radius:14px;padding:18px;border-left:3px solid var(--red);transition:transform .15s}
+.violation-card:hover{transform:translateX(4px)}
+.v-rule{font-size:11px;font-family:var(--mono);color:var(--red);font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.v-title{font-size:15px;font-weight:700;margin-bottom:8px}
+.v-explain{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:12px}
+.v-triggers{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.trigger-tag{padding:3px 10px;background:rgba(255,71,87,.12);border:1px solid rgba(255,71,87,.25);border-radius:6px;font-size:12px;font-family:var(--mono);color:var(--red)}
+.v-fix-label{font-size:11px;font-weight:700;color:var(--yellow);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.v-fix{background:rgba(255,211,42,.06);border:1px solid rgba(255,211,42,.2);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--yellow);line-height:1.6}
+
+/* Suggestions */
+.suggestions-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:20px}
+.sugg-title{font-size:14px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;color:var(--cyan)}
+.sugg-item{background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:14px 16px;margin-bottom:10px;position:relative;cursor:pointer;transition:all .2s}
+.sugg-item:hover{border-color:var(--cyan);background:rgba(0,212,255,.05)}
+.sugg-item:last-child{margin-bottom:0}
+.sugg-label{font-size:11px;font-family:var(--mono);color:var(--cyan);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.6px}
+.sugg-text{font-size:14px;line-height:1.6;color:var(--text)}
+.copy-btn{position:absolute;top:12px;right:12px;padding:4px 10px;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.25);border-radius:6px;font-size:11px;color:var(--cyan);cursor:pointer;font-family:var(--mono);transition:all .15s}
+.copy-btn:hover{background:rgba(0,212,255,.2)}
+
+/* ═══════════════════════════════════════════════
+   RULES PANEL
+═══════════════════════════════════════════════ */
+.rules-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:14px 20px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;transition:border-color .2s;animation:fadeUp .5s .3s ease both}
+.rules-toggle:hover{border-color:var(--accent)}
+.rules-toggle-label{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+.rules-toggle-arrow{font-size:18px;transition:transform .3s;color:var(--muted)}
+.rules-toggle.open .rules-toggle-arrow{transform:rotate(180deg)}
+
+.rules-panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;display:none;animation:fadeUp .3s ease both;margin-bottom:24px}
+.rules-panel.open{display:block}
+.rules-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.rule-item{background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:16px}
+.rule-item-icon{font-size:22px;margin-bottom:8px}
+.rule-item-name{font-size:13px;font-weight:700;margin-bottom:6px;color:var(--text)}
+.rule-item-desc{font-size:12px;color:var(--muted);line-height:1.6}
+.rule-updated{display:inline-block;margin-top:6px;font-size:10px;font-family:var(--mono);color:var(--accent);background:rgba(108,99,255,.12);padding:2px 8px;border-radius:4px}
+
+/* ═══════════════════════════════════════════════
+   FOOTER MEME
+═══════════════════════════════════════════════ */
+.footer-meme{text-align:center;margin-top:48px;opacity:.5;font-size:12px;color:var(--muted);animation:fadeUp .5s .5s ease both}
+.footer-memes{font-size:28px;margin-bottom:4px}
+
+/* ═══════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════ */
+#toast-area{position:fixed;bottom:24px;right:24px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:12px;padding:12px 18px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:slideIn .3s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+
+/* ═══════════════════════════════════════════════
+   RULE SCANNER OVERLAY
+═══════════════════════════════════════════════ */
+#scanner-overlay{
+  position:fixed;inset:0;z-index:999;
+  background:rgba(13,15,20,.97);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:0;padding:32px 24px;
+  opacity:0;pointer-events:none;transition:opacity .3s ease;
+  backdrop-filter:blur(8px);
+}
+#scanner-overlay.active{opacity:1;pointer-events:all}
+
+.scanner-header{text-align:center;margin-bottom:28px}
+.scanner-title{font-size:20px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px}
+.scanner-sub{font-size:13px;color:var(--muted);font-family:var(--mono)}
+
+.scanner-post-preview{
+  background:var(--surface2);border:1px solid var(--border);border-radius:14px;
+  padding:14px 18px;max-width:560px;width:100%;
+  font-size:13px;line-height:1.6;color:var(--text);
+  margin-bottom:28px;
+  max-height:80px;overflow:hidden;
+  position:relative;
+}
+.scanner-post-preview::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:30px;
+  background:linear-gradient(transparent,var(--surface2));
+}
+
+.scanner-rules-list{
+  width:100%;max-width:560px;
+  display:flex;flex-direction:column;gap:6px;
+  max-height:340px;overflow:hidden;
+  position:relative;
+}
+
+.scan-rule-row{
+  display:flex;align-items:center;gap:12px;
+  padding:8px 14px;border-radius:10px;
+  background:var(--surface);border:1px solid var(--border);
+  font-size:13px;transition:all .3s ease;
+  opacity:.35;transform:translateX(-6px);
+}
+.scan-rule-row.scanning{
+  opacity:1;transform:translateX(0);
+  border-color:var(--accent);
+  background:rgba(108,99,255,.1);
+  box-shadow:0 0 16px rgba(108,99,255,.15);
+}
+.scan-rule-row.done-clean{
+  opacity:.55;transform:translateX(0);
+  border-color:rgba(0,230,118,.25);
+  background:rgba(0,230,118,.04);
+}
+.scan-rule-row.done-violation{
+  opacity:1;transform:translateX(0);
+  border-color:rgba(255,71,87,.5);
+  background:rgba(255,71,87,.08);
+}
+
+.scan-rule-icon{font-size:16px;flex-shrink:0;width:24px;text-align:center}
+.scan-rule-name{flex:1;font-weight:600;font-size:12px}
+.scan-rule-status{font-size:11px;font-family:var(--mono);flex-shrink:0;width:70px;text-align:right}
+
+.scanner-progress-bar{
+  width:100%;max-width:560px;
+  height:4px;background:var(--surface2);
+  border-radius:2px;overflow:hidden;
+  margin-top:16px;
+}
+.scanner-progress-fill{
+  height:100%;width:0%;
+  background:linear-gradient(90deg,var(--accent),var(--cyan));
+  border-radius:2px;transition:width .3s ease;
+}
+
+.scan-status-text{
+  margin-top:12px;font-size:12px;font-family:var(--mono);
+  color:var(--muted);text-align:center;min-height:18px;
+}
+
+/* ═══════════════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════════════ */
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+@media(max-width:600px){
+  .wrapper{padding:24px 16px 60px}
+  .logo-text{font-size:32px}
+  .btn-analyze{width:100%;justify-content:center}
+  .rules-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-orbs">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+</div>
+
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo-row">
+      <img src="data:image/jpeg;base64,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" alt="AkuTOOL Logo" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid rgba(108,99,255,.4);box-shadow:0 0 24px rgba(108,99,255,.3);" />
+      <div class="logo-text">AkuTOOL</div>
+    </div>
+    <div class="logo-tag">X Post Compliance Checker</div>
+    <div class="header-desc">Will your tweet get you banned? Paste it and watch it scan through all 30 X rules in real-time before revealing your verdict. Powered by the full X rulebook.</div>
+  </div>
+
+
+
+  <!-- MAIN INPUT CARD -->
+  <div class="main-card">
+    <div class="card-title"><span>✍️</span> Your X Post Draft</div>
+
+    <div class="post-wrap">
+      <textarea id="post-input" class="post-textarea"
+        placeholder="Paste your X post here...&#10;&#10;e.g. 'GM frens! This token is going to 100x, ape in now before it's too late! Use my referral code MOON50 for bonus. #DeFi #Crypto'"
+        oninput="updateCount()"
+        onkeydown="if(event.ctrlKey&&event.key==='Enter')analyze()"></textarea>
+      <span class="char-count" id="char-count">0 / 280</span>
+    </div>
+
+    <div class="post-bar">
+      <div class="post-hints">
+        <span class="hint-pill" onclick="loadSample(0)">🚀 Shill sample</span>
+        <span class="hint-pill" onclick="loadSample(1)">🤖 AI content sample</span>
+        <span class="hint-pill" onclick="loadSample(2)">💰 Paid deal sample</span>
+        <span class="hint-pill" onclick="loadSample(3)">✅ Clean sample</span>
+      </div>
+      <button class="btn-analyze" id="analyze-btn" onclick="analyze()">
+        <span id="btn-icon">🔍</span>
+        <span id="btn-text">Check My Post</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div id="result-area"></div>
+
+  <!-- X RULES REFERENCE -->
+  <div class="rules-toggle" id="rules-toggle" onclick="toggleRules()">
+    <span class="rules-toggle-label">📖 Full X Rules Reference <span style="font-size:10px;background:rgba(108,99,255,.2);color:var(--accent);padding:2px 8px;border-radius:4px;font-family:var(--mono)">30 RULES EMBEDDED</span></span>
+    <span class="rules-toggle-arrow">▾</span>
+  </div>
+  <div class="rules-panel" id="rules-panel">
+    <div class="rules-grid" id="rules-grid"></div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer-meme">
+    <div>AkuTOOL — Stay based, stay compliant. Check before you post.</div>
+  </div>
+</div>
+
+<div id="scanner-overlay">
+  <div class="scanner-header">
+    <div class="scanner-title">🔍 Scanning Against X Rulebook...</div>
+    <div class="scanner-sub" id="scan-counter">Checking rule 0 of 0</div>
+  </div>
+  <div class="scanner-post-preview" id="scan-preview"></div>
+  <div class="scanner-rules-list" id="scan-rules-list"></div>
+  <div class="scanner-progress-bar">
+    <div class="scanner-progress-fill" id="scan-progress"></div>
+  </div>
+  <div class="scan-status-text" id="scan-status-text">Initializing scan...</div>
+</div>
+
+<div id="toast-area"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// ⚙️ CONFIG — Edit X rules, samples, colors here
+// ══════════════════════════════════════════════════════════════
+const CONFIG = {
+  appName: "AkuTOOL",
+  version: "v3.0",
+  lastRulesUpdate: "March 2026",
+
+  // ── Sample posts for quick testing ────────────────────────
+  samples: [
+    // Shill sample
+    "GM frens! 🚀 This new token is going to 100x guaranteed, don't miss this gem! Ape in NOW before it pumps! Fill your bags while you can. This is not financial advice but trust me bro. #Crypto #DeFi #GemAlert",
+    // AI content sample
+    "Just created this amazing artwork using Midjourney AI! The future of creativity is here 🤖✨ Would love to hear your thoughts on AI-generated art and how it's changing the crypto space.",
+    // Paid deal sample
+    "Super excited to share this new DeFi protocol with you all! Use my referral code MOON50 for 20% bonus. In partnership with @DefiProtocol — they've built something incredible. Limited time offer, sign up now!",
+    // Clean sample
+    "Just read the new Ethereum whitepaper updates. Fascinating improvements to the consensus mechanism. Here are my thoughts on what this means for L2 scaling solutions and the broader ecosystem 🧵 #Ethereum #Web3"
+  ],
+
+  // ── Full X Rules (update this section when X updates rules) ─
+  xRules: [
+    {
+      id: "paid-partnership",
+      icon: "🤝",
+      name: "Paid Partnership Disclosure",
+      category: "Disclosure",
+      updated: "Mar 1, 2026",
+      description: "All sponsored, paid, affiliate, ambassador, referral, or brand-deal content must use the Paid Partnership label in the post composer OR include #PaidPartnership. Undisclosed promotions = account suspension.",
+      keywords: ["sponsored","paid","partner","collab","collaboration","promotion","promo","ambassador","deal","campaign","advertisement","#ad","#sponsored","invite code","referral code","use my code","use code","my code","affiliate","commission","in partnership","brought to you","supported by","gifted","gifted by","thanks to","join using","sign up with","discount code","bonus code","promo code"],
+      violation: "Post appears to contain paid promotional content without the required #PaidPartnership disclosure label.",
+      severity: "high"
+    },
+    {
+      id: "ai-content",
+      icon: "🤖",
+      name: "AI-Generated Content Label",
+      category: "Disclosure",
+      updated: "Mar 1, 2026",
+      description: "Any synthetically generated or AI-manipulated media (images, video, audio, text) that could mislead users must be labeled with the 'Made with AI' toggle in the composer or #MadeWithAI hashtag.",
+      keywords: ["ai generated","made with ai","created with ai","dall-e","dalle","midjourney","stable diffusion","chatgpt","gpt-4","claude","ai art","ai image","ai video","ai voice","ai avatar","synthetically generated","deepfake","ai-generated","generated by ai","sora","runway","kling","generated with","created using ai","ai created","artificial intelligence created"],
+      violation: "Post contains AI-generated content without the required disclosure label.",
+      severity: "high"
+    },
+    {
+      id: "financial-promo",
+      icon: "📈",
+      name: "Financial Promotion Rules",
+      category: "Finance",
+      updated: "Jan 2025",
+      description: "Posts promoting financial products, crypto tokens, or investments must not contain guaranteed return language, must not be undisclosed paid promotions, and must include #DYOR or 'Not financial advice' disclaimer.",
+      keywords: ["guaranteed returns","guaranteed profit","100x","1000x","this will moon","pump incoming","buy now before","limited time","get in early","massive gains","easy money","risk free","risk-free","moon soon","ape in","don't miss this gem","fill your bags","ngmi if you miss","this is financial advice","trust me bro","can't miss","next bitcoin","next ethereum","next solana","get rich","make money fast","passive income guaranteed","financial freedom guaranteed","will go up","guaranteed to pump"],
+      violation: "Post contains financial promotion language that may mislead investors without proper disclaimers.",
+      severity: "high"
+    },
+    {
+      id: "hateful-conduct",
+      icon: "🚫",
+      name: "Hateful Conduct",
+      category: "Safety",
+      updated: "Oct 2023",
+      description: "X prohibits content that dehumanizes people based on race, ethnicity, national origin, caste, sexual orientation, gender, gender identity, religious affiliation, age, disability, or serious disease.",
+      keywords: ["slurs","hate speech","dehumanize","racial slur","ethnic slur","kill all","death to","inferior race","subhuman","go back to your country","worthless people","animals they are","vermin","parasites they are"],
+      violation: "Post may contain language that violates X's Hateful Conduct policy.",
+      severity: "critical"
+    },
+    {
+      id: "violent-speech",
+      icon: "⚠️",
+      name: "Violent Speech",
+      category: "Safety",
+      updated: "Oct 2023",
+      description: "Threats of violence or wishing/hoping for serious physical harm against a specific person or group of people is prohibited on X.",
+      keywords: ["i will kill","i'm going to kill","you should die","i hope you die","death threat","bomb threat","shoot you","hurt you","going to harm","will hurt","attack you","beat you up","come for you"],
+      violation: "Post may contain violent speech or threats violating X's Safety policies.",
+      severity: "critical"
+    },
+    {
+      id: "spam-manipulation",
+      icon: "🤖",
+      name: "Platform Manipulation & Spam",
+      category: "Integrity",
+      updated: "Sep 2024",
+      description: "Artificially amplifying or suppressing content, coordinated inauthentic behavior, purchasing followers/engagement, and spam-like posting patterns are prohibited.",
+      keywords: ["follow for follow","f4f","like for like","l4l","buy followers","buy likes","buy retweets","drop your wallet","drop wallet","copy paste","repost to win","rt to win","follow to win","mass dm","airdrop spam","engagement farm","boost my post","share for share","s4s"],
+      violation: "Post may involve platform manipulation, spam, or coordinated inauthentic behavior.",
+      severity: "medium"
+    },
+    {
+      id: "sensitive-media",
+      icon: "🔞",
+      name: "Sensitive Media",
+      category: "Content",
+      updated: "Apr 2023",
+      description: "Graphic violence, adult content (unless account is properly labeled), and other sensitive media must be appropriately labeled. Posting such content without labels or to non-consenting audiences is prohibited.",
+      keywords: ["nsfw","explicit content","graphic violence","nude","nudity","18+","adult content","gore","gory","graphic image","disturbing content","warning graphic","content warning"],
+      violation: "Post may contain sensitive media requiring proper content labels.",
+      severity: "medium"
+    },
+    {
+      id: "privacy",
+      icon: "🔒",
+      name: "Private Information (Doxxing)",
+      category: "Privacy",
+      updated: "Oct 2023",
+      description: "Sharing private information about individuals without their consent (doxxing), including home addresses, phone numbers, financial information, or private media, is strictly prohibited.",
+      keywords: ["doxx","dox","doxxing","home address","personal address","phone number","ssn","social security","passport number","leak their info","exposed address","real name and address","their ip address","private number","bank account","credit card number"],
+      violation: "Post may contain or threaten to share private personal information (doxxing).",
+      severity: "critical"
+    },
+    {
+      id: "misleading-info",
+      icon: "🔎",
+      name: "Misleading Information",
+      category: "Integrity",
+      updated: "Dec 2024",
+      description: "X restricts misleading information that could deceive users, particularly around elections, public health emergencies, or civic integrity. Context labels may be applied by Community Notes.",
+      keywords: ["fake news","this is real","confirmed truth","breaking: fake","misinformation","they don't want you to know","suppressed truth","mainstream media won't tell","cover up","conspiracy confirmed","wake up sheeple","the real truth","hidden agenda"],
+      violation: "Post may spread misleading or unverified information.",
+      severity: "medium"
+    },
+    {
+      id: "impersonation",
+      icon: "🎭",
+      name: "Impersonation",
+      category: "Integrity",
+      updated: "Oct 2023",
+      description: "Creating accounts or posting content that falsely represents you as another person, organization, or entity in a deceptive manner is prohibited.",
+      keywords: ["i am cz","i am vitalik","official account of","real elon","this is official","impersonating","i am the real","speaking as ceo","i represent"],
+      violation: "Post may contain impersonation of another individual or entity.",
+      severity: "critical"
+    },
+    {
+      id: "illegal-goods",
+      icon: "⛔",
+      name: "Illegal or Regulated Goods",
+      category: "Safety",
+      updated: "Oct 2023",
+      description: "Selling, buying, or facilitating transactions for illegal goods or services — including drugs, weapons, counterfeit goods, and human trafficking — is prohibited.",
+      keywords: ["buy drugs","sell drugs","illegal weapons","counterfeit","fake id","fake passport","traffick","smuggle","darknet","dark web marketplace","buy weed","cocaine for sale","methamphetamine","stolen goods for sale"],
+      violation: "Post may involve promotion or sale of illegal or regulated goods.",
+      severity: "critical"
+    },
+    {
+      id: "prediction-markets",
+      icon: "🎲",
+      name: "Prediction Markets / Gambling",
+      category: "Disclosure",
+      updated: "Mar 1, 2026",
+      description: "Posts promoting prediction markets (Kalshi, Polymarket, etc.) or gambling platforms are classified as gambling-related content and MUST include the Paid Partnership label if promotional.",
+      keywords: ["polymarket","kalshi","prediction market","bet on","place your bet","gambling","crypto casino","stake.com","rollbit","win big","place a bet","sports betting","online casino","bet now"],
+      violation: "Post promoting prediction markets or gambling requires disclosure labels per X's updated policy.",
+      severity: "medium"
+    },
+    {
+      id: "suicide-self-harm",
+      icon: "🆘",
+      name: "Suicide & Self-Harm",
+      category: "Safety",
+      updated: "Oct 2023",
+      description: "X prohibits content that promotes, glorifies, or provides instructions for self-harm or suicide. Safe messaging guidelines apply. Crisis resources must be surfaced.",
+      keywords: ["how to kill myself","suicide method","self harm tutorial","cut myself","ways to die","end my life","kill myself","harm myself","suicide instructions","self-harm tips"],
+      violation: "Post may contain content related to self-harm or suicide in a way that violates X's safety policies.",
+      severity: "critical"
+    },
+    {
+      id: "child-safety",
+      icon: "👶",
+      name: "Child Safety (CSAM)",
+      category: "Safety",
+      updated: "Oct 2023",
+      description: "X has zero tolerance for content that sexualizes minors, child sexual abuse material (CSAM), or content that promotes harm to children in any form.",
+      keywords: ["minor sexual","csam","child sexual","loli","shota","jailbait","underage sexual","kids naked","child nude"],
+      violation: "Post may contain content that violates X's Child Safety policies. This is a zero-tolerance policy.",
+      severity: "critical"
+    },
+    {
+      id: "terrorism",
+      icon: "💣",
+      name: "Violent Extremism & Terrorism",
+      category: "Safety",
+      updated: "Oct 2023",
+      description: "X prohibits content that promotes, glorifies, or supports terrorist organizations, violent extremist groups, or acts of mass violence.",
+      keywords: ["isis","daesh","al-qaeda","taliban recruitment","jihad attack","terror attack glorify","bomb a building","mass shooting plan","white supremacist attack","glorify terrorism","support isis"],
+      violation: "Post may contain content related to violent extremism or terrorism.",
+      severity: "critical"
+    },
+    {
+      id: "copyright",
+      icon: "©️",
+      name: "Copyright & IP Infringement",
+      category: "Content",
+      updated: "Oct 2023",
+      description: "Sharing copyrighted material without authorization — including music, movie clips, software, or other creative works — is prohibited. X will respond to valid DMCA notices.",
+      keywords: ["full movie download","download cracked","pirated copy","full album download","crack software","serial key free","nulled script","warez","pirate bay link","torrent download"],
+      violation: "Post may contain links to or promotion of copyright-infringing content.",
+      severity: "medium"
+    },
+    {
+      id: "account-security",
+      icon: "🔐",
+      name: "Account Security Threats",
+      category: "Safety",
+      updated: "Oct 2023",
+      description: "Posts that attempt to harvest credentials, run phishing schemes, or compromise user accounts are prohibited.",
+      keywords: ["enter your password","verify your account now","click to secure","wallet connect scam","seed phrase","give me your seed","share your private key","metamask verify","account suspended click","urgent account action"],
+      violation: "Post may contain phishing or account security threat content.",
+      severity: "critical"
+    },
+    {
+      id: "election-integrity",
+      icon: "🗳️",
+      name: "Election Integrity",
+      category: "Integrity",
+      updated: "Nov 2024",
+      description: "X prohibits synthetic or manipulated media related to candidates, and content that could suppress voting or deceive voters about the electoral process.",
+      keywords: ["don't vote","election is rigged","voting is pointless","stay home on election","fake ballot","voter fraud confirmed","polls are closed early","election cancelled","your vote doesn't count","election stolen"],
+      violation: "Post may contain content that undermines election integrity.",
+      severity: "critical"
+    },
+    {
+      id: "civic-info",
+      icon: "🏛️",
+      name: "Civic & Political Manipulation",
+      category: "Integrity",
+      updated: "Nov 2024",
+      description: "Coordinated inauthentic behavior and foreign interference in civic discourse is prohibited. Political ads must comply with X's political advertising policies.",
+      keywords: ["coordinated campaign","foreign interference","astroturf campaign","political bot","buy political votes","shill for politician","paid political","political ad without disclosure"],
+      violation: "Post may involve civic manipulation or undisclosed political advertising.",
+      severity: "high"
+    },
+    {
+      id: "health-misinformation",
+      icon: "🏥",
+      name: "Health Misinformation",
+      category: "Integrity",
+      updated: "Dec 2024",
+      description: "During public health emergencies, X restricts content that contradicts authoritative guidance from public health officials in ways that may harm users.",
+      keywords: ["vaccine kills","don't get vaccinated","5g causes","covid is fake","cure for cancer hidden","big pharma hiding","doctors are lying about","this cures covid","miracle cure","inject bleach"],
+      violation: "Post may contain health misinformation that could cause harm.",
+      severity: "high"
+    },
+    {
+      id: "harassment",
+      icon: "😤",
+      name: "Harassment & Abuse",
+      category: "Safety",
+      updated: "Oct 2023",
+      description: "X prohibits targeted harassment, including sending unwanted sexual content, engaging in hateful conduct, threatening or inciting others to harm an individual.",
+      keywords: ["ratio this person","go harass","dm flood","report brigade","mass report","ratioed loser","trash human being","worthless person","die already","kys","kill yourself","nobody likes you","you should disappear"],
+      violation: "Post may constitute targeted harassment or abuse under X's policies.",
+      severity: "high"
+    },
+    {
+      id: "synthetic-media",
+      icon: "🎬",
+      name: "Synthetic & Manipulated Media",
+      category: "Disclosure",
+      updated: "Mar 1, 2026",
+      description: "AI-generated or manipulated images, audio, or video of real people — especially in political or sensitive contexts — must be labeled. Misleading synthetic media may be removed.",
+      keywords: ["deepfake video","ai face swap","voice clone","synthetic voice","ai president speech","fake audio","manipulated video","ai cloned voice","face swap of","voice deepfake"],
+      violation: "Post may contain synthetic or manipulated media that requires disclosure.",
+      severity: "high"
+    },
+    {
+      id: "crisis-info",
+      icon: "🚨",
+      name: "Crisis & Emergency Info",
+      category: "Safety",
+      updated: "Oct 2023",
+      description: "During crises, X works with authorities. Spreading false emergency information, fake evacuation orders, or fake crisis alerts is prohibited.",
+      keywords: ["fake evacuation order","false amber alert","fake emergency alert","false disaster warning","fake weather emergency","hoax evacuation","fake shelter in place"],
+      violation: "Post may contain false or misleading emergency information.",
+      severity: "critical"
+    },
+    {
+      id: "weapons",
+      icon: "🔫",
+      name: "Weapons & Arms Trafficking",
+      category: "Safety",
+      updated: "Oct 2023",
+      description: "X prohibits using the platform to traffic, sell, or facilitate access to illegal weapons, firearm accessories like silencers or conversion kits that are regulated, or instructions for illegal weapon modifications.",
+      keywords: ["ghost gun for sale","illegal suppressor","3d printed gun file","auto sear for sale","sell glock switch","convert to full auto","untraceable gun","firearms trafficking","guns without background"],
+      violation: "Post may involve illegal weapons sales, trafficking or prohibited firearm modifications.",
+      severity: "critical"
+    },
+    {
+      id: "nonconsensual-media",
+      icon: "📵",
+      name: "Non-Consensual Nudity",
+      category: "Privacy",
+      updated: "Oct 2023",
+      description: "Sharing intimate or sexual media of someone without their consent (revenge porn) is strictly prohibited and will result in immediate account suspension.",
+      keywords: ["revenge porn","leaked nudes","hacked nudes","leaked of celebrity","explicit leaked","private photos leaked","onlyfans leak","sex tape leaked without consent","intimate video leaked"],
+      violation: "Post may contain or link to non-consensual intimate media.",
+      severity: "critical"
+    },
+    {
+      id: "gambling-promo",
+      icon: "🎰",
+      name: "Unregulated Gambling Promotion",
+      category: "Disclosure",
+      updated: "Mar 1, 2026",
+      description: "Promoting gambling services not licensed in the relevant jurisdiction, or doing so without proper age-gating disclosures, violates X's advertising policies.",
+      keywords: ["unregulated casino","offshore betting","unlicensed gambling","bet no kyc","anonymous gambling","crypto gambling no kyc","gambling no verification","instant payout casino no id"],
+      violation: "Post may promote unregulated or unlicensed gambling services.",
+      severity: "medium"
+    },
+    {
+      id: "crypto-scam",
+      icon: "🪙",
+      name: "Crypto Scams & Rug Pulls",
+      category: "Finance",
+      updated: "Mar 1, 2026",
+      description: "Promoting rug pulls, honeypot tokens, wash trading schemes, or fake celebrity crypto endorsements is prohibited. Scam token promotion may lead to suspension.",
+      keywords: ["rug pull","honeypot token","fake elon crypto","celebrity endorses coin","guaranteed airdrop","send eth get double","free crypto send first","elon gives crypto","wash trading","fake volume","inflated volume","exit scam"],
+      violation: "Post may be promoting a crypto scam, rug pull, or fraudulent investment scheme.",
+      severity: "critical"
+    },
+    {
+      id: "impersonate-official",
+      icon: "🏢",
+      name: "Fake Official Accounts",
+      category: "Integrity",
+      updated: "Oct 2023",
+      description: "Accounts or posts pretending to be official government bodies, verified institutions, or public services to deceive users are prohibited.",
+      keywords: ["official government notice","irs notice","fbi notice","cdc announcement","white house official","sec official statement","treasury official","government warning fake","fake official"],
+      violation: "Post may impersonate an official government body or verified institution.",
+      severity: "critical"
+    },
+    {
+      id: "coordinated-inauthentic",
+      icon: "👥",
+      name: "Coordinated Inauthentic Behavior",
+      category: "Integrity",
+      updated: "Sep 2024",
+      description: "Operating multiple fake accounts to amplify narratives, artificially trending topics, or conducting information operations is prohibited.",
+      keywords: ["operation hashtag","trend this hashtag","make this trend","push this narrative","coordinate replies","flood the hashtag","spam this topic","bot army","sockpuppet"],
+      violation: "Post may be part of coordinated inauthentic behavior.",
+      severity: "high"
+    },
+    {
+      id: "medical-advice",
+      icon: "💊",
+      name: "Dangerous Medical Claims",
+      category: "Safety",
+      updated: "Dec 2024",
+      description: "Posts claiming unproven medical treatments cure serious diseases, or discouraging people from seeking medical help, can cause real-world harm and may be restricted.",
+      keywords: ["this cures cancer","miracle cure for diabetes","treat covid at home with","don't go to the hospital","doctors don't want","alkaline water cures","essential oil cures","this herb kills cancer","ivermectin cures","chlorine dioxide"],
+      violation: "Post may contain dangerous or unsubstantiated medical claims.",
+      severity: "high"
+    },
+    {
+      id: "minor-safety",
+      icon: "🧒",
+      name: "Minor Safety & Grooming",
+      category: "Safety",
+      updated: "Oct 2023",
+      description: "Any content that could be used to groom, exploit, or facilitate access to minors for exploitation purposes is strictly prohibited.",
+      keywords: ["contact underage","meet teen girls","meet teen boys","kids dm me","children dm","snap minors","chat with teens","message young girls","talk to minors","teenage girls snap"],
+      violation: "Post may contain content that puts minors at risk.",
+      severity: "critical"
+    }
+  ]
+};
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+function init() {
+  renderRules();
+  document.getElementById('post-input').addEventListener('input', updateCount);
+  document.getElementById('post-input').addEventListener('keydown', e => {
+    if (e.ctrlKey && e.key === 'Enter') analyze();
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// CHAR COUNT
+// ══════════════════════════════════════════════════════════════
+function updateCount() {
+  const len = document.getElementById('post-input').value.length;
+  const el = document.getElementById('char-count');
+  el.textContent = `${len} / 280`;
+  el.className = len > 280 ? 'char-count char-warn' : 'char-count';
+}
+
+// ══════════════════════════════════════════════════════════════
+// SAMPLE POSTS
+// ══════════════════════════════════════════════════════════════
+function loadSample(i) {
+  document.getElementById('post-input').value = CONFIG.samples[i];
+  updateCount();
+  toast('✓ Sample loaded — click Check My Post!', 'blue');
+}
+
+// ══════════════════════════════════════════════════════════════
+// RULES PANEL
+// ══════════════════════════════════════════════════════════════
+function toggleRules() {
+  const panel = document.getElementById('rules-panel');
+  const toggle = document.getElementById('rules-toggle');
+  panel.classList.toggle('open');
+  toggle.classList.toggle('open');
+}
+
+function renderRules() {
+  document.getElementById('rules-grid').innerHTML = CONFIG.xRules.map(r => `
+    <div class="rule-item">
+      <div class="rule-item-icon">${r.icon}</div>
+      <div class="rule-item-name">${r.name}</div>
+      <div class="rule-item-desc">${r.description.substring(0,120)}...</div>
+      <span class="rule-updated">Updated ${r.updated}</span>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// CLAUDE API CALL
+// ══════════════════════════════════════════════════════════════
+async function callClaude(system, user) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-calls': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4096,
+      system,
+      messages: [{ role: 'user', content: user }]
+    })
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || 'API error'); }
+  const d = await res.json();
+  return d.content[0].text;
+}
+
+// ══════════════════════════════════════════════════════════════
+// LOCAL RULE CHECK (fast, works without API key)
+// ══════════════════════════════════════════════════════════════
+function localCheck(text) {
+  const lower = text.toLowerCase();
+  const violations = [];
+
+  CONFIG.xRules.forEach(rule => {
+    const hits = rule.keywords.filter(k => lower.includes(k.toLowerCase()));
+    if (hits.length > 0) {
+      // Check if already has the required disclosure
+      const hasDisclosure =
+        (rule.id === 'paid-partnership' && (lower.includes('#paidpartnership') || lower.includes('paid partnership'))) ||
+        (rule.id === 'ai-content' && (lower.includes('#madewithai') || lower.includes('made with ai') || lower.includes('#aiart'))) ||
+        (rule.id === 'financial-promo' && (lower.includes('#dyor') || lower.includes('not financial advice') || lower.includes('nfa') || lower.includes('dyor')));
+
+      if (!hasDisclosure) {
+        violations.push({
+          type: rule.name,
+          rule: rule.category + ' — Updated ' + rule.updated,
+          explanation: rule.violation,
+          triggered_by: hits.slice(0, 4),
+          fix: generateLocalFix(rule.id, hits, text),
+          severity: rule.severity
+        });
+      }
+    }
+  });
+
+  const suggestions = generateLocalSuggestions(text, violations);
+  return { compliant: violations.length === 0, violations, suggestions, overall_summary: violations.length === 0 ? 'No violations detected. Your post looks good to go!' : `Found ${violations.length} potential violation${violations.length > 1 ? 's' : ''} — review and fix before posting.` };
+}
+
+function generateLocalFix(ruleId, hits, text) {
+  const fixes = {
+    'paid-partnership': `Add #PaidPartnership at the end of your post, or use the Paid Partnership label toggle in the X post composer before publishing. Remove or disclose these terms: "${hits.slice(0,2).join('", "')}"`,
+    'ai-content': `Add #MadeWithAI at the end of your post, or enable the "Made with AI" label in the X composer. This clearly signals your content is AI-generated.`,
+    'financial-promo': `Add #DYOR and "Not financial advice" to your post. Remove or soften guaranteed return language like "${hits[0]}". Replace hype claims with factual information.`,
+    'hateful-conduct': `Remove all language that demeans or targets groups of people. Focus on the idea, not the identity of people.`,
+    'violent-speech': `Remove any threatening language. X will act on threats even if "jokingly" intended.`,
+    'spam-manipulation': `Remove engagement-bait phrases. Focus on genuine content rather than soliciting artificial engagement.`,
+    'sensitive-media': `Add a content warning or use X's sensitive media settings on your account before posting.`,
+    'privacy': `Remove all personal identifying information. Never share someone's address, phone, or private details.`,
+    'misleading-info': `Add context, cite credible sources, or add a disclaimer that this is opinion/speculation.`,
+    'impersonation': `Clearly identify yourself. Never imply you are someone else.`,
+    'illegal-goods': `Remove all references to illegal goods or services. This may result in immediate account suspension.`,
+    'prediction-markets': `If this is a paid promotion for a prediction market or gambling platform, add the Paid Partnership label.`,
+  };
+  return fixes[ruleId] || `Review X's ${ruleId} policy and update your post accordingly.`;
+}
+
+function generateLocalSuggestions(text, violations) {
+  if (violations.length === 0) return [];
+  const suggestions = [];
+  let revised = text;
+
+  // Add disclosures
+  const needsPartnership = violations.some(v => v.type.includes('Paid Partnership'));
+  const needsAI = violations.some(v => v.type.includes('AI'));
+  const needsDyor = violations.some(v => v.type.includes('Financial'));
+
+  if (needsPartnership) {
+    suggestions.push({
+      label: 'Option 1 — Add Disclosure',
+      text: text + '\n\n#PaidPartnership'
+    });
+  }
+  if (needsAI) {
+    suggestions.push({
+      label: 'Option 2 — Label AI Content',
+      text: text + '\n\n#MadeWithAI'
+    });
+  }
+  if (needsDyor) {
+    // Soften the language
+    revised = text
+      .replace(/100x|1000x/gi, 'high potential')
+      .replace(/guaranteed/gi, 'potential')
+      .replace(/ape in/gi, 'consider researching')
+      .replace(/fill your bags/gi, 'do your research')
+      .replace(/moon/gi, 'grow')
+      .replace(/don't miss/gi, 'worth looking into');
+    suggestions.push({
+      label: 'Option 3 — Softened Version',
+      text: revised + '\n\nNot financial advice. #DYOR'
+    });
+  }
+
+  // Always offer a compliant rewrite suggestion
+  suggestions.push({
+    label: '✦ AI Rewrite (connect API for better version)',
+    text: text
+      .replace(/100x|1000x/gi, 'strong potential')
+      .replace(/guaranteed/gi, 'potential')
+      .replace(/ape in now/gi, 'worth researching')
+      .replace(/fill your bags/gi, 'do your own research')
+      .replace(/don't miss this gem/gi, 'this project looks interesting')
+      .replace(/pump incoming/gi, 'positive momentum')
+      + (needsPartnership ? '\n\n#PaidPartnership' : '')
+      + (needsAI ? '\n#MadeWithAI' : '')
+      + (needsDyor ? '\n\nNot financial advice. #DYOR' : '')
+  });
+
+  return suggestions;
+}
+
+// ══════════════════════════════════════════════════════════════
+// AI CHECK (with Claude)
+// ══════════════════════════════════════════════════════════════
+async function aiCheck(text) {
+  const rulesContext = CONFIG.xRules.map(r =>
+    `- ${r.name} (${r.category}): ${r.description.substring(0, 120)}`
+  ).join('\n');
+
+  const system = `You are an X (Twitter) compliance officer. Analyze posts for policy violations.\n\nRules:\n${rulesContext}\n\nRespond ONLY with valid JSON (no markdown, no backticks, no extra text):\n{"compliant":true,"overall_summary":"string","violations":[{"type":"Rule Name","rule":"Category","explanation":"why","triggered_by":["phrase"],"fix":"how to fix","severity":"critical"}],"suggestions":[{"label":"label","text":"full rewritten post"}]}\n\nProvide 2-3 suggestion rewrites fixing all violations.`;
+
+  const raw = await callClaude(system, `Analyze this X post for compliance:\n\n"${text}"`);
+
+  // Robust JSON extraction - find first { to last }
+  const start = raw.indexOf('{');
+  const end = raw.lastIndexOf('}');
+  if (start === -1 || end === -1) throw new Error('No JSON in response');
+  return JSON.parse(raw.substring(start, end + 1));
+}
+
+// ══════════════════════════════════════════════════════════════
+// SCANNER OVERLAY
+// ══════════════════════════════════════════════════════════════
+function showScanner(text) {
+  const overlay = document.getElementById('scanner-overlay');
+  const list = document.getElementById('scan-rules-list');
+  const preview = document.getElementById('scan-preview');
+  const counter = document.getElementById('scan-counter');
+
+  // Set preview text
+  preview.textContent = text.length > 120 ? text.substring(0, 120) + '...' : text;
+
+  // Build rule rows
+  list.innerHTML = CONFIG.xRules.map((r, i) => `
+    <div class="scan-rule-row" id="scan-row-${i}">
+      <span class="scan-rule-icon">${r.icon}</span>
+      <span class="scan-rule-name">${r.name}</span>
+      <span class="scan-rule-status" id="scan-status-${i}">waiting...</span>
+    </div>`).join('');
+
+  counter.textContent = `Checking rule 0 of ${CONFIG.xRules.length}`;
+  document.getElementById('scan-progress').style.width = '0%';
+  document.getElementById('scan-status-text').textContent = 'Scanning your post against full X rulebook...';
+  overlay.classList.add('active');
+}
+
+async function runScanAnimation(text) {
+  const lower = text.toLowerCase();
+  const violations = [];
+
+  for (let i = 0; i < CONFIG.xRules.length; i++) {
+    const rule = CONFIG.xRules[i];
+    const row = document.getElementById(`scan-row-${i}`);
+    const statusEl = document.getElementById(`scan-status-${i}`);
+    const counter = document.getElementById('scan-counter');
+    const progressEl = document.getElementById('scan-progress');
+    const statusText = document.getElementById('scan-status-text');
+
+    // Activate this row
+    row.classList.add('scanning');
+    statusEl.textContent = 'scanning...';
+    statusEl.style.color = 'var(--cyan)';
+    counter.textContent = `Checking rule ${i + 1} of ${CONFIG.xRules.length}`;
+    statusText.textContent = `Checking: ${rule.name}...`;
+
+    // Scroll to keep current row visible
+    row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // Simulate scan delay (faster for simple rules, brief pause each)
+    await new Promise(r => setTimeout(r, 60 + Math.random() * 80));
+
+    // Check the rule
+    const hits = rule.keywords.filter(k => lower.includes(k.toLowerCase()));
+    let violated = hits.length > 0;
+
+    // Check if disclosure already present
+    if (violated) {
+      const hasDisclosure =
+        (rule.id === 'paid-partnership' && (lower.includes('#paidpartnership') || lower.includes('paid partnership'))) ||
+        (rule.id === 'ai-content' && (lower.includes('#madewithai') || lower.includes('made with ai') || lower.includes('#aiart'))) ||
+        (rule.id === 'financial-promo' && (lower.includes('#dyor') || lower.includes('not financial advice') || lower.includes('nfa') || lower.includes('dyor')));
+      if (hasDisclosure) violated = false;
+    }
+
+    // Update row status
+    row.classList.remove('scanning');
+    if (violated) {
+      row.classList.add('done-violation');
+      statusEl.textContent = '⚠ VIOLATION';
+      statusEl.style.color = 'var(--red)';
+      violations.push({ rule, hits: hits.slice(0, 4) });
+    } else {
+      row.classList.add('done-clean');
+      statusEl.textContent = '✓ clear';
+      statusEl.style.color = 'var(--green)';
+    }
+
+    // Update progress
+    progressEl.style.width = `${((i + 1) / CONFIG.xRules.length) * 100}%`;
+  }
+
+  // Final pause to show complete scan
+  document.getElementById('scan-status-text').textContent =
+    violations.length === 0 ? '✅ Scan complete — no violations found!' : `⚠ Scan complete — ${violations.length} violation${violations.length > 1 ? 's' : ''} found!`;
+
+  await new Promise(r => setTimeout(r, 900));
+  return violations;
+}
+
+function hideScanner() {
+  document.getElementById('scanner-overlay').classList.remove('active');
+}
+
+// ══════════════════════════════════════════════════════════════
+// MAIN ANALYZE FUNCTION
+// ══════════════════════════════════════════════════════════════
+async function analyze() {
+  const text = document.getElementById('post-input').value.trim();
+  if (!text) { toast('✍️ Paste your post first, anon!', 'yellow'); return; }
+  if (text.length < 5) { toast('⚠ Post too short to analyze.', 'yellow'); return; }
+
+  const btn = document.getElementById('analyze-btn');
+  const btnIcon = document.getElementById('btn-icon');
+  const btnText = document.getElementById('btn-text');
+  btn.disabled = true;
+  btnIcon.innerHTML = '<span class="spinner"></span>';
+  btnText.textContent = 'Scanning rules...';
+
+  // Clear previous result
+  document.getElementById('result-area').innerHTML = '';
+
+  // Show scanner overlay and run animation
+  showScanner(text);
+  const scanViolations = await runScanAnimation(text);
+
+  try {
+    // Run AI deep analysis after scan animation
+    document.getElementById('scan-status-text').textContent = '🤖 Claude AI doing deep analysis...';
+    const result = await aiCheck(text);
+    hideScanner();
+    renderResult(result, text);
+  } catch (e) {
+    // Fallback to local scan results if AI unavailable
+    const result = buildResultFromScan(text, scanViolations);
+    hideScanner();
+    renderResult(result, text);
+  }
+
+  btn.disabled = false;
+  btnIcon.textContent = '🔍';
+  btnText.textContent = 'Check My Post';
+}
+
+function buildResultFromScan(text, scanViolations) {
+  const violations = scanViolations.map(({ rule, hits }) => ({
+    type: rule.name,
+    rule: rule.category + ' — Updated ' + rule.updated,
+    explanation: rule.violation,
+    triggered_by: hits,
+    fix: generateLocalFix(rule.id, hits, text),
+    severity: rule.severity
+  }));
+  const suggestions = generateLocalSuggestions(text, violations);
+  return {
+    compliant: violations.length === 0,
+    violations,
+    suggestions,
+    overall_summary: violations.length === 0
+      ? 'No violations detected across all 30 X rules. Your post looks good to go!'
+      : `Found ${violations.length} potential violation${violations.length > 1 ? 's' : ''} — review and fix before posting.`
+  };
+}
+
+// ══════════════════════════════════════════════════════════════
+// RENDER RESULT
+// ══════════════════════════════════════════════════════════════
+function renderResult(result, originalText) {
+  const isClean = result.compliant || result.violations.length === 0;
+
+  // Meme reactions based on result
+  const memes = isClean
+    ? { face: '✅', label: 'Post is Compliant', sub: 'No violations detected. Your post looks good to go!', cls: 'verdict-ok' }
+    : result.violations.some(v => v.severity === 'critical')
+    ? { face: '🚨', label: 'Critical Violation Found', sub: 'This post could get your account suspended. Fix the issues below before posting.', cls: 'verdict-bad' }
+    : result.violations.length >= 2
+    ? { face: '⚠️', label: 'Multiple Issues Found', sub: 'Your post has compliance issues. Review and fix the violations below.', cls: 'verdict-warn' }
+    : { face: '⚡', label: 'Minor Issue Detected', sub: 'Almost compliant. A small fix is needed before you post. See below.', cls: 'verdict-warn' };
+
+  let html = `<div class="result-area">`;
+
+  // Verdict card
+  html += `<div class="main-card ${memes.cls}" style="background:var(--surface);border-radius:24px">
+    <div class="meme-reaction">
+      <div class="meme-face">${memes.face}</div>
+      <div class="meme-label" style="color:${isClean ? 'var(--green)' : result.violations.some(v=>v.severity==='critical') ? 'var(--red)' : 'var(--yellow)'}">${memes.label}</div>
+      <div class="meme-sub">${memes.sub}</div>
+    </div>
+    <div class="${memes.cls}">
+      <div class="verdict-title" style="color:${isClean ? 'var(--green)' : 'var(--red)'}">
+        ${isClean ? '✅' : '⚠️'} ${isClean ? 'All Clear' : `${result.violations.length} Violation${result.violations.length > 1 ? 's' : ''} Found`}
+      </div>
+      <div class="verdict-summary">${result.overall_summary}</div>
+    </div>
+  </div>`;
+
+  // Violations
+  if (!isClean && result.violations.length > 0) {
+    const sevColor = { critical: 'var(--red)', high: 'var(--orange)', medium: 'var(--yellow)', low: 'var(--muted)' };
+    html += `<div class="violations-list">`;
+    result.violations.forEach(v => {
+      const triggers = (v.triggered_by || []).map(t => `<span class="trigger-tag">${t}</span>`).join('');
+      html += `<div class="violation-card" style="border-left-color:${sevColor[v.severity]||'var(--red)'}">
+        <div class="v-rule">⚠ ${v.rule} · ${(v.severity||'high').toUpperCase()}</div>
+        <div class="v-title">${v.type}</div>
+        <div class="v-explain">${v.explanation}</div>
+        ${triggers ? `<div class="v-triggers">${triggers}</div>` : ''}
+        <div class="v-fix-label">🔧 How to fix:</div>
+        <div class="v-fix">${v.fix}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Suggestions
+  if (result.suggestions && result.suggestions.length > 0) {
+    html += `<div class="suggestions-card">
+      <div class="sugg-title">💡 Compliant Alternatives</div>`;
+    result.suggestions.forEach((s, i) => {
+      const id = `sugg-${i}`;
+      html += `<div class="sugg-item" onclick="copyText('${id}')">
+        <div class="sugg-label">${s.label}</div>
+        <div class="sugg-text" id="${id}">${s.text.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>
+        <button class="copy-btn" onclick="event.stopPropagation();copyText('${id}')">📋 Copy</button>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Try again button
+  html += `<div style="text-align:center;margin-top:8px">
+    <button class="btn-analyze" style="background:linear-gradient(135deg,var(--surface2),var(--surface));border:1px solid var(--border2);color:var(--muted)" onclick="document.getElementById('result-area').innerHTML='';document.getElementById('post-input').value='';updateCount()">
+      ✏️ Check Another Post
+    </button>
+  </div>`;
+
+  html += `</div>`;
+  document.getElementById('result-area').innerHTML = html;
+
+  // Scroll to result
+  document.getElementById('result-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ══════════════════════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════════════════════
+function copyText(elId) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const text = el.innerText || el.textContent;
+  navigator.clipboard?.writeText(text).then(() => toast('✓ Copied to clipboard!', 'green'));
+}
+
+function toast(msg, type) {
+  const colors = { green: 'var(--green)', red: 'var(--red)', yellow: 'var(--yellow)', blue: 'var(--cyan)' };
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = `<span style="color:${colors[type]||'var(--green)'}">●</span> ${msg}`;
+  document.getElementById('toast-area').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+// Init on load - use DOMContentLoaded to ensure DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+</script>
+</body>
+</html>
